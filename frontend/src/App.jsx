@@ -78,7 +78,7 @@ export default function App() {
 
   const title = useMemo(
     () =>
-      'ual-Bot Local Assistant',
+      'Dual-Bot Local Assistant',
     []
   )
 
@@ -226,7 +226,7 @@ export default function App() {
         ) : (
           <>
             <BotSelector bots={bots} activeBot={activeBot} onSelect={(botId) => resetBot(botId)} />
-            <HeaderStats health={health} stats={stats} />
+            {activeBot === 'enterprise' ? <HeaderStats health={health} stats={stats} /> : null}
 
             <div className="grid gap-6 xl:grid-cols-[1.2fr,0.8fr]">
               <div className="space-y-6">

@@ -1,20 +1,36 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { ChatMessage } from './ChatMessage'
 
 export function ChatPanel({ bot, messages, onSend, sending, grounded, validationNotes }) {
   const [draft, setDraft] = useState('')
   const isEnterprise = bot === 'enterprise'
+  const scrollRef = useRef(null)
+
+  const helperText = useMemo(() => {
+    if (isEnterprise) return 'Ask grounded questions across the uploaded enterprise knowledge base.'
+    return 'I can do weather, time, news, jokes, and friendly conversation. What can I help you with today?'
+  }, [isEnterprise])
 
   async function handleSubmit(event) {
     event.preventDefault()
-    if (!draft.trim() || sending) {
-      return
-    }
+    if (!draft.trim() || sending) return
     const message = draft
     setDraft('')
     await onSend(message)
   }
+
+  function handleKeyDown(event) {
+    if (event.key !== 'Enter') return
+    if (event.shiftKey) return // allow newline with Shift+Enter
+    event.preventDefault()
+    event.currentTarget.form?.requestSubmit()
+  }
+
+  useEffect(() => {
+    // keep chat pinned to the latest message
+    scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [messages.length])
 
   return (
     <div className="rounded-[2rem] border border-white/70 bg-white/85 p-6 shadow-panel backdrop-blur">
@@ -23,11 +39,7 @@ export function ChatPanel({ bot, messages, onSend, sending, grounded, validation
           <h2 className="text-xl font-extrabold text-ink">
             {isEnterprise ? 'Enterprise Knowledge Chat' : 'General Assistant Chat'}
           </h2>
-          <p className="mt-2 text-sm text-slate">
-            {isEnterprise
-              ? 'Ask grounded questions across the uploaded enterprise knowledge base.'
-              : 'Ask for weather, time, news, jokes, or normal conversation.'}
-          </p>
+          <p className="mt-2 text-sm text-slate">{helperText}</p>
         </div>
         <div
           className={[
@@ -47,7 +59,7 @@ export function ChatPanel({ bot, messages, onSend, sending, grounded, validation
           <div className="flex h-full items-center justify-center text-sm text-slate">
             {isEnterprise
               ? 'Start by uploading documents, then ask a question.'
-              : 'Ask a question to start the general assistant conversation.'}
+              : 'Ask for weather, time, news, a joke, or just chat normally. How can I help you today?'}
           </div>
         )}
       </div>
@@ -60,6 +72,7 @@ export function ChatPanel({ bot, messages, onSend, sending, grounded, validation
         <textarea
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={handleKeyDown}
           rows={3}
           placeholder={
             isEnterprise
@@ -79,4 +92,3 @@ export function ChatPanel({ bot, messages, onSend, sending, grounded, validation
     </div>
   )
 }
-
