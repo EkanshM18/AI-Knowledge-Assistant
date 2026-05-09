@@ -58,8 +58,9 @@ class EnterpriseAssistantGraph:
             "last response",
         ]
         summary_markers = ["summarize", "summary", "high level overview"]
-
-        if any(marker in question for marker in memory_only_markers):
+        if self._looks_like_general_bot_question(question):
+            route = "general_redirect"
+        elif any(marker in question for marker in memory_only_markers):
             route = "memory"
         elif any(marker in question for marker in summary_markers):
             route = "summarization"
@@ -69,9 +70,44 @@ class EnterpriseAssistantGraph:
         return {"route": route}
 
     def _route_edge(self, state: EnterpriseAgentState) -> Literal["retriever", "synthesizer"]:
-        if state.get("route") == "memory":
+        if state.get("route") in {"memory", "general_redirect"}:
             return "synthesizer"
         return "retriever"
+
+    def _looks_like_general_bot_question(self, question: str) -> bool:
+        phrase_markers = [
+            "how are you",
+            "what are you doing",
+            "make me laugh",
+            "tell me a joke",
+            "latest news",
+            "current events",
+            "what time is it",
+            "what is the time",
+            "good morning",
+            "good afternoon",
+            "good evening",
+        ]
+        word_markers = {
+            "weather",
+            "forecast",
+            "temperature",
+            "humidity",
+            "wind",
+            "clock",
+            "news",
+            "joke",
+            "funny",
+        }
+        greeting_only = {"hi", "hello", "hey"}
+
+        if question in greeting_only:
+            return True
+        if any(marker in question for marker in phrase_markers):
+            return True
+
+        tokens = set(re.findall(r"[a-z0-9]+", question))
+        return bool(tokens & word_markers)
 
     def _retriever_node(self, state: EnterpriseAgentState) -> EnterpriseAgentState:
         retrieved = self.retrieval_service.retrieve(
@@ -122,4 +158,3 @@ class EnterpriseAssistantGraph:
             "grounded": grounded,
             "validation_notes": note,
         }
-

@@ -1,8 +1,16 @@
 from __future__ import annotations
 
+import re
+
 from transformers import pipeline
 
 from app.core.config import Settings
+from app.prompts.system_prompts import (
+    build_enterprise_memory_prompt,
+    build_enterprise_retrieval_prompt,
+    build_general_assistant_prompt,
+    enterprise_redirect_to_general_bot,
+)
 
 
 class GenerationService:
@@ -37,7 +45,7 @@ class GenerationService:
         text = outputs[0]["generated_text"].strip()
         if self._task == "text-generation" and text.startswith(prompt):
             text = text[len(prompt) :].strip()
-        return text
+        return self._clean_generated_text(text)
 
     def generate_answer(
         self,
@@ -46,6 +54,9 @@ class GenerationService:
         history_text: str,
         route: str,
     ) -> str:
+        if route == "general_redirect":
+            return enterprise_redirect_to_general_bot()
+
         if route != "memory" and not retrieved_chunks:
             return (
                 "I do not have enough context in the uploaded enterprise knowledge to answer that yet. "
@@ -74,36 +85,29 @@ class GenerationService:
             summaries = [item.get("summary", "").strip() for item in tool_results if item.get("summary")]
             return "\n".join(summary for summary in summaries if summary).strip()
 
-        prompt = (
-            "You are a friendly general assistant.\n"
-            "Keep your answer concise, helpful, and natural.\n"
-            "Use the conversation history when it helps.\n"
-            "If the user asks for something current or external that you cannot verify here, say so clearly.\n\n"
-            f"Conversation history:\n{history_text or 'No previous conversation.'}\n\n"
-            f"User question: {question}\n\n"
-            "Answer:"
-        )
+        prompt = build_general_assistant_prompt(history_text=history_text, question=question)
         return self._run_generation(prompt)
+
+    def _clean_generated_text(self, text: str) -> str:
+        cleaned = text.strip()
+        cleaned = re.sub(r"^(answer|response)\s*:\s*", "", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"^(assistant|user|system)\s*:\s*", "", cleaned, flags=re.IGNORECASE)
+
+        lines = [line.strip() for line in cleaned.splitlines() if line.strip()]
+        if lines:
+            first_line = re.sub(r"^(assistant|user|system)\s*:\s*", "", lines[0], flags=re.IGNORECASE)
+            lines[0] = first_line.strip()
+            cleaned = "\n".join(lines)
+
+        return cleaned.strip()
 
     def _build_prompt(self, question: str, history_text: str, context: str, route: str) -> str:
         if route == "memory":
-            return (
-                "You are an enterprise assistant.\n"
-                "Answer only from the conversation history below.\n"
-                "If the history does not contain the answer, say you do not know.\n\n"
-                f"Conversation history:\n{history_text or 'No previous conversation.'}\n\n"
-                f"User question: {question}\n\n"
-                "Answer:"
-            )
+            return build_enterprise_memory_prompt(history_text=history_text, question=question)
 
-        return (
-            "You are an enterprise AI knowledge assistant.\n"
-            "Answer only from the retrieved context.\n"
-            "Do not invent facts. If the answer is not in the context, say so clearly.\n"
-            "When you use evidence, cite sources like [S1], [S2].\n\n"
-            f"Conversation history:\n{history_text or 'No previous conversation.'}\n\n"
-            f"Retrieved context:\n{context or 'No context available.'}\n\n"
-            f"User question: {question}\n\n"
-            "Grounded answer:"
+        return build_enterprise_retrieval_prompt(
+            history_text=history_text,
+            context=context,
+            question=question,
         )
 

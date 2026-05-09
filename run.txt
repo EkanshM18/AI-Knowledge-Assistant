@@ -22,4 +22,6 @@ git init
 git remote add origin https://github.com/EkanshM18/AI-Knowledge-Assistant.git
 git add .
 git commit -m "Initial commit: AI Knowledge Assistant"
+
 git push -u origin main
+git push -u origin feature_general
