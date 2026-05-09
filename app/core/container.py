@@ -1,4 +1,12 @@
-from app.agents.graph import KnowledgeAssistantGraph
+from app.bots.enterprise.agents.graph import EnterpriseAssistantGraph
+from app.bots.enterprise.services.chat_service import EnterpriseChatService
+from app.bots.general.agents.graph import GeneralAssistantGraph
+from app.bots.general.clients.news_client import NewsClient
+from app.bots.general.clients.weather_client import WeatherClient
+from app.bots.general.services.chat_service import GeneralChatService
+from app.bots.general.services.joke import JokeService
+from app.bots.general.services.tool_service import GeneralToolService
+from app.bots.general.services.weather import WeatherService
 from app.core.config import Settings, get_settings
 from app.services.chat_service import ChatService
 from app.services.document_loader import DocumentLoader
@@ -23,15 +31,39 @@ class ApplicationContainer:
             qdrant_service=self.qdrant_service,
             retrieval_service=self.retrieval_service,
         )
-        self.agent_graph = KnowledgeAssistantGraph(
+        self.enterprise_agent_graph = EnterpriseAssistantGraph(
             memory_service=self.memory_service,
             retrieval_service=self.retrieval_service,
             generation_service=self.generation_service,
         )
-        self.chat_service = ChatService(
+        self.enterprise_chat_service = EnterpriseChatService(
             settings=self.settings,
             memory_service=self.memory_service,
-            agent_graph=self.agent_graph,
+            agent_graph=self.enterprise_agent_graph,
+        )
+        self.weather_client = WeatherClient(self.settings)
+        self.news_client = NewsClient(self.settings)
+        self.joke_service = JokeService()
+        self.weather_service = WeatherService(self.weather_client)
+        self.general_tool_service = GeneralToolService(
+            settings=self.settings,
+            weather_service=self.weather_service,
+            news_client=self.news_client,
+            joke_service=self.joke_service,
+        )
+        self.general_agent_graph = GeneralAssistantGraph(
+            memory_service=self.memory_service,
+            tool_service=self.general_tool_service,
+            generation_service=self.generation_service,
+        )
+        self.general_chat_service = GeneralChatService(
+            settings=self.settings,
+            memory_service=self.memory_service,
+            agent_graph=self.general_agent_graph,
+        )
+        self.chat_service = ChatService(
+            enterprise_chat_service=self.enterprise_chat_service,
+            general_chat_service=self.general_chat_service,
         )
 
     def close(self) -> None:

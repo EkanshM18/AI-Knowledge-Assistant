@@ -13,10 +13,13 @@ uvicorn app.main:app --reload
 cd frontend
 npm run dev
 
-:: Git Setup for New Repository
-:: rmdir /s /q .git
-:: git init
-:: git remote add origin https://github.com/EkanshM18/AI-Knowledge-Assistant.git
-:: git add .
-:: git commit -m "Initial commit: AI Knowledge Assistant"
-:: git push -u origin main
+
+
+
+Git Setup for New Repository
+rmdir /s /q .git
+git init
+git remote add origin https://github.com/EkanshM18/AI-Knowledge-Assistant.git
+git add .
+git commit -m "Initial commit: AI Knowledge Assistant"
+git push -u origin main

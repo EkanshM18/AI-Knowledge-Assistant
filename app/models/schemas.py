@@ -1,10 +1,13 @@
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
+
+BotType = Literal["enterprise", "general"]
 
 
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1)
+    bot_type: BotType = "enterprise"
     session_id: str | None = None
     top_k: int | None = Field(default=None, ge=1, le=10)
     metadata_filters: dict[str, Any] | None = None
@@ -20,13 +23,23 @@ class SourceCitation(BaseModel):
     excerpt: str
 
 
+class ToolCall(BaseModel):
+    tool_name: str
+    status: str
+    summary: str
+    source_label: str
+    source_url: str = ""
+
+
 class ChatResponse(BaseModel):
     session_id: str
+    bot_type: BotType = "enterprise"
     route: str
     grounded: bool
     answer: str
     validation_notes: str
     sources: list[SourceCitation] = Field(default_factory=list)
+    tool_calls: list[ToolCall] = Field(default_factory=list)
 
 
 class UploadResponse(BaseModel):

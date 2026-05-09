@@ -26,6 +26,19 @@ class GenerationService:
             )
         return self._pipeline
 
+    def _run_generation(self, prompt: str) -> str:
+        generator = self._get_pipeline()
+        outputs = generator(
+            prompt,
+            max_new_tokens=self.settings.llm_max_new_tokens,
+            do_sample=self.settings.llm_temperature > 0.2,
+            temperature=self.settings.llm_temperature,
+        )
+        text = outputs[0]["generated_text"].strip()
+        if self._task == "text-generation" and text.startswith(prompt):
+            text = text[len(prompt) :].strip()
+        return text
+
     def generate_answer(
         self,
         question: str,
@@ -48,18 +61,29 @@ class GenerationService:
 
         context = "\n\n".join(context_lines)[: self.settings.max_context_characters]
         prompt = self._build_prompt(question, history_text, context, route)
+        return self._run_generation(prompt)
 
-        generator = self._get_pipeline()
-        outputs = generator(
-            prompt,
-            max_new_tokens=self.settings.llm_max_new_tokens,
-            do_sample=self.settings.llm_temperature > 0.2,
-            temperature=self.settings.llm_temperature,
+    def generate_general_response(
+        self,
+        question: str,
+        route: str,
+        history_text: str,
+        tool_results: list[dict],
+    ) -> str:
+        if route != "conversation" and tool_results:
+            summaries = [item.get("summary", "").strip() for item in tool_results if item.get("summary")]
+            return "\n".join(summary for summary in summaries if summary).strip()
+
+        prompt = (
+            "You are a friendly general assistant.\n"
+            "Keep your answer concise, helpful, and natural.\n"
+            "Use the conversation history when it helps.\n"
+            "If the user asks for something current or external that you cannot verify here, say so clearly.\n\n"
+            f"Conversation history:\n{history_text or 'No previous conversation.'}\n\n"
+            f"User question: {question}\n\n"
+            "Answer:"
         )
-        text = outputs[0]["generated_text"].strip()
-        if self._task == "text-generation" and text.startswith(prompt):
-            text = text[len(prompt) :].strip()
-        return text
+        return self._run_generation(prompt)
 
     def _build_prompt(self, question: str, history_text: str, context: str, route: str) -> str:
         if route == "memory":

@@ -2,8 +2,9 @@ import { useState } from 'react'
 
 import { ChatMessage } from './ChatMessage'
 
-export function ChatPanel({ messages, onSend, sending, grounded, validationNotes }) {
+export function ChatPanel({ bot, messages, onSend, sending, grounded, validationNotes }) {
   const [draft, setDraft] = useState('')
+  const isEnterprise = bot === 'enterprise'
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -19,9 +20,13 @@ export function ChatPanel({ messages, onSend, sending, grounded, validationNotes
     <div className="rounded-[2rem] border border-white/70 bg-white/85 p-6 shadow-panel backdrop-blur">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl font-extrabold text-ink">Knowledge Chat</h2>
+          <h2 className="text-xl font-extrabold text-ink">
+            {isEnterprise ? 'Enterprise Knowledge Chat' : 'General Assistant Chat'}
+          </h2>
           <p className="mt-2 text-sm text-slate">
-            Ask grounded questions across the uploaded enterprise knowledge base.
+            {isEnterprise
+              ? 'Ask grounded questions across the uploaded enterprise knowledge base.'
+              : 'Ask for weather, time, news, jokes, or normal conversation.'}
           </p>
         </div>
         <div
@@ -30,7 +35,7 @@ export function ChatPanel({ messages, onSend, sending, grounded, validationNotes
             grounded ? 'bg-accent/10 text-accent' : 'bg-coral/10 text-coral'
           ].join(' ')}
         >
-          {grounded ? 'Grounded' : 'Awaiting evidence'}
+          {grounded ? 'Grounded' : isEnterprise ? 'Awaiting evidence' : 'Live response'}
         </div>
       </div>
 
@@ -40,7 +45,9 @@ export function ChatPanel({ messages, onSend, sending, grounded, validationNotes
         ))}
         {messages.length === 0 && (
           <div className="flex h-full items-center justify-center text-sm text-slate">
-            Start by uploading documents, then ask a question.
+            {isEnterprise
+              ? 'Start by uploading documents, then ask a question.'
+              : 'Ask a question to start the general assistant conversation.'}
           </div>
         )}
       </div>
@@ -54,7 +61,11 @@ export function ChatPanel({ messages, onSend, sending, grounded, validationNotes
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           rows={3}
-          placeholder="Ask about policies, reports, contracts, onboarding docs..."
+          placeholder={
+            isEnterprise
+              ? 'Ask about policies, reports, contracts, onboarding docs...'
+              : 'Try: weather in Kolkata, latest AI news, tell me a joke...'
+          }
           className="flex-1 resize-none rounded-[1.6rem] border border-mist bg-white px-4 py-3 outline-none transition focus:border-accent"
         />
         <button

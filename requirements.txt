@@ -1,67 +1,3 @@
-<<<<<<< HEAD
-# =========================
-# Core Backend
-# =========================
-fastapi
-uvicorn[standard]
-python-dotenv
-
-# =========================
-# LLM + RAG Frameworks
-# =========================
-llama-index
-llama-index-llms-openai
-llama-index-embeddings-openai
-
-langchain
-langgraph
-
-openai
-tiktoken
-
-# =========================
-# Vector Database
-# =========================
-qdrant-client
-
-# =========================
-# Data Processing
-# =========================
-pandas
-numpy
-
-# =========================
-# Document Parsing
-# =========================
-pypdf
-python-docx
-unstructured
-beautifulsoup4
-lxml
-
-# =========================
-# Async + HTTP
-# =========================
-httpx
-aiofiles
-
-# =========================
-# Database (for chat history)
-# =========================
-sqlalchemy
-psycopg2-binary
-
-# =========================
-# Utilities
-# =========================
-loguru
-tqdm
-
-# =========================
-# Dev & Testing
-# =========================
-pytest
-=======
 fastapi==0.115.12
 uvicorn[standard]==0.34.2
 python-multipart==0.0.20
@@ -82,5 +18,4 @@ pypdf==5.5.0
 python-docx==1.1.2
 beautifulsoup4==4.13.4
 lxml==5.4.0
-
->>>>>>> c65c535 (First Commit)
+httpx==0.28.1

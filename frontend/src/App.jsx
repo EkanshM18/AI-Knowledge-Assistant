@@ -1,40 +1,68 @@
 import { useEffect, useState } from 'react'
 
 import { fetchHealth, fetchStats, sendMessage, uploadDocuments } from './api/client'
+import { BotSelector } from './components/BotSelector'
 import { ChatPanel } from './components/ChatPanel'
+import { EvidencePanel } from './components/EvidencePanel'
 import { HeaderStats } from './components/HeaderStats'
-import { SourcePanel } from './components/SourcePanel'
 import { UploadPanel } from './components/UploadPanel'
 
-const initialMessages = [
+const bots = [
   {
-    role: 'assistant',
-    content:
+    id: 'enterprise',
+    name: 'Enterprise Bot',
+    badge: 'RAG',
+    description: 'Uses uploaded internal knowledge and source grounding for enterprise answers.',
+    welcome:
       'Upload internal documents and I will answer using only the indexed enterprise knowledge with source grounding.'
+  },
+  {
+    id: 'general',
+    name: 'General Bot',
+    badge: 'Tools',
+    description: 'Handles weather, time, news, jokes, and normal conversation without the document store.',
+    welcome: 'Ask for weather, time, news, a joke, or just chat normally.'
   }
 ]
 
-function getSessionId() {
-  const existing = window.localStorage.getItem('enterprise-session-id')
+function getSessionId(botId) {
+  const storageKey = `${botId}-session-id`
+  const existing = window.localStorage.getItem(storageKey)
   if (existing) {
     return existing
   }
   const created = window.crypto?.randomUUID?.() ?? `${Date.now()}-session`
-  window.localStorage.setItem('enterprise-session-id', created)
+  window.localStorage.setItem(storageKey, created)
   return created
 }
 
 export default function App() {
+  const [activeBot, setActiveBot] = useState('enterprise')
   const [health, setHealth] = useState(null)
   const [stats, setStats] = useState(null)
-  const [messages, setMessages] = useState(initialMessages)
-  const [sources, setSources] = useState([])
-  const [grounded, setGrounded] = useState(false)
-  const [validationNotes, setValidationNotes] = useState('')
+  const [conversationState, setConversationState] = useState(() =>
+    Object.fromEntries(
+      bots.map((bot) => [
+        bot.id,
+        {
+          messages: [{ role: 'assistant', content: bot.welcome }],
+          sources: [],
+          toolCalls: [],
+          grounded: false,
+          validationNotes: '',
+          route: ''
+        }
+      ])
+    )
+  )
   const [uploading, setUploading] = useState(false)
   const [sending, setSending] = useState(false)
   const [status, setStatus] = useState('Loading local services...')
-  const [sessionId] = useState(getSessionId)
+  const [sessionIds] = useState(() =>
+    Object.fromEntries(bots.map((bot) => [bot.id, getSessionId(bot.id)]))
+  )
+
+  const currentConversation = conversationState[activeBot]
 
   async function refreshStats() {
     const [healthResponse, statsResponse] = await Promise.all([fetchHealth(), fetchStats()])
@@ -64,28 +92,48 @@ export default function App() {
 
   async function handleSend(message) {
     const userMessage = { role: 'user', content: message }
-    setMessages((current) => [...current, userMessage])
+    setConversationState((current) => ({
+      ...current,
+      [activeBot]: {
+        ...current[activeBot],
+        messages: [...current[activeBot].messages, userMessage]
+      }
+    }))
     setSending(true)
-    setStatus('Running retrieval and agent orchestration...')
+    setStatus(activeBot === 'enterprise' ? 'Running retrieval and agent orchestration...' : 'Running general tools...')
 
     try {
       const response = await sendMessage({
         message,
-        session_id: sessionId
+        bot_type: activeBot,
+        session_id: sessionIds[activeBot]
       })
-      setMessages((current) => [...current, { role: 'assistant', content: response.answer }])
-      setSources(response.sources ?? [])
-      setGrounded(response.grounded)
-      setValidationNotes(response.validation_notes)
+      setConversationState((current) => ({
+        ...current,
+        [activeBot]: {
+          messages: [...current[activeBot].messages, { role: 'assistant', content: response.answer }],
+          sources: response.sources ?? [],
+          toolCalls: response.tool_calls ?? [],
+          grounded: response.grounded,
+          validationNotes: response.validation_notes,
+          route: response.route ?? ''
+        }
+      }))
       setStatus(`Route: ${response.route}`)
     } catch (error) {
-      setMessages((current) => [
+      setConversationState((current) => ({
         ...current,
-        {
-          role: 'assistant',
-          content: `Request failed: ${error.message}`
+        [activeBot]: {
+          ...current[activeBot],
+          messages: [
+            ...current[activeBot].messages,
+            {
+              role: 'assistant',
+              content: `Request failed: ${error.message}`
+            }
+          ]
         }
-      ])
+      }))
       setStatus(error.message)
     } finally {
       setSending(false)
@@ -99,14 +147,14 @@ export default function App() {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <div className="rounded-full bg-ink px-4 py-2 text-xs font-bold uppercase tracking-[0.26em] text-white w-fit">
-                Enterprise RAG Platform
+                Dual-Bot Local Assistant
               </div>
               <h1 className="mt-5 text-4xl font-extrabold leading-tight md:text-5xl">
-                Local multi-agent knowledge assistant for internal enterprise data.
+                One workspace for grounded enterprise search and lightweight general tools.
               </h1>
               <p className="mt-4 max-w-2xl text-base leading-8 text-slate">
-                FastAPI, LlamaIndex, Qdrant local mode, Hugging Face models, and LangGraph orchestration in a
-                production-style portfolio build.
+                FastAPI, Qdrant, Hugging Face models, and LangGraph orchestration with separate enterprise and
+                general assistant flows.
               </p>
             </div>
             <div className="rounded-[1.8rem] bg-ink px-5 py-4 text-white">
@@ -116,20 +164,28 @@ export default function App() {
           </div>
         </section>
 
+        <BotSelector bots={bots} activeBot={activeBot} onSelect={setActiveBot} />
+
         <HeaderStats health={health} stats={stats} />
 
         <div className="grid gap-6 xl:grid-cols-[1.2fr,0.8fr]">
           <div className="space-y-6">
-            <UploadPanel onUpload={handleUpload} uploading={uploading} />
+            {activeBot === 'enterprise' && <UploadPanel onUpload={handleUpload} uploading={uploading} />}
             <ChatPanel
-              messages={messages}
+              bot={activeBot}
+              messages={currentConversation.messages}
               onSend={handleSend}
               sending={sending}
-              grounded={grounded}
-              validationNotes={validationNotes}
+              grounded={currentConversation.grounded}
+              validationNotes={currentConversation.validationNotes}
             />
           </div>
-          <SourcePanel sources={sources} />
+          <EvidencePanel
+            bot={activeBot}
+            sources={currentConversation.sources}
+            toolCalls={currentConversation.toolCalls}
+            route={currentConversation.route}
+          />
         </div>
       </div>
     </main>
