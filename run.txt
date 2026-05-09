@@ -1,0 +1,22 @@
+python -m venv .venv
+
+.venv\Scripts\activate
+
+python.exe -m pip install --upgrade pip
+pip install -r requirements.txt
+copy .env.example .env
+npm install
+
+Next local run steps are:
+
+uvicorn app.main:app --reload
+cd frontend
+npm run dev
+
+:: Git Setup for New Repository
+:: rmdir /s /q .git
+:: git init
+:: git remote add origin https://github.com/EkanshM18/AI-Knowledge-Assistant.git
+:: git add .
+:: git commit -m "Initial commit: AI Knowledge Assistant"
+:: git push -u origin main

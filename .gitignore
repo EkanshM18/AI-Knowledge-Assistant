@@ -1,0 +1,40 @@
+<<<<<<< HEAD
+# Environment variables
+# Never commit this file!
+.env
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+# Use the name of your virtual environment directory
+venv/
+.venv/
+env/
+
+# IDE / Editor specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Operating System files
+.DS_Store
+=======
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+.env
+node_modules/
+dist/
+build/
+*.log
+data/uploads/
+data/pipeline_cache/
+
+>>>>>>> c65c535 (First Commit)
