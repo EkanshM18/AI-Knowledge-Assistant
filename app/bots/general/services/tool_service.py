@@ -270,33 +270,37 @@ class GeneralToolService:
             "nice",
             "great",
             "sounds good",
+            "yes",
+            "yeah",
+            "sure",
         }
 
-        if normalized in greeting_phrases:
+        if any(p in normalized for p in greeting_phrases):
             return "Hi! I can help with weather, time, news, jokes, or a normal chat."
-        if normalized in wellbeing_phrases:
+        if any(p in normalized for p in wellbeing_phrases):
             return "I'm doing well and ready to help. You can ask for weather, news, time, jokes, or just chat."
-        if normalized in thanks_phrases:
+        if any(p in normalized for p in thanks_phrases):
             return "You're welcome."
-        if normalized in farewell_phrases:
+        if any(p in normalized for p in farewell_phrases):
             return "See you next time."
-        if normalized in capability_phrases:
+        if any(p in normalized for p in capability_phrases):
             return (
                 "I can answer quick general questions and help with weather, time, news, and jokes. "
                 "For bigger or more unusual requests, ask normally and I'll do my best."
             )
-        if normalized in activity_phrases:
+        if any(p in normalized for p in activity_phrases):
             return (
                 "I'm here focusing on your message and helping in this chat. "
                 "Right now I can help with weather, time, news, jokes, or general questions."
             )
-        if normalized in work_follow_up_phrases:
+        if any(p in normalized for p in work_follow_up_phrases):
             return (
                 "I mean I'm here working on your request in this conversation, not doing offline tasks. "
                 "If you want, ask me something specific and I'll help directly."
             )
-        if normalized in acknowledgement_phrases:
-            return "Sounds good. What would you like to do next?"
+        if any(p == normalized or normalized.startswith(p) for p in acknowledgement_phrases):
+            return "Got it. What would you like to do next? I can check the weather, news, or tell a joke."
+
         return None
 
     def _normalize_text(self, value: str) -> str:
@@ -322,6 +326,15 @@ class GeneralToolService:
             "internal reports",
             "uploaded report",
             "uploaded reports",
+            "leave policy",
+            "vacation",
+            "sick leave",
+            "holiday",
+            "payroll",
+            "salary",
+            "benefits",
+            "insurance",
+            "reimbursement",
             "uploaded contract",
             "uploaded contracts",
             "company contract",

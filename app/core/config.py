@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     app_debug: bool = Field(default=True, alias="APP_DEBUG")
 
     embedding_model: str = "BAAI/bge-small-en-v1.5"
-    llm_model: str = "google/flan-t5-base"
+    llm_model: str = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
     llm_device: str = "cpu"
     llm_max_new_tokens: int = 256
     llm_temperature: float = 0.1
@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     top_k: int = 4
     max_context_characters: int = 5000
     allowed_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    http_timeout_seconds: float = 10.0
+    news_feed_urls: str = (
+        "https://feeds.npr.org/1001/rss.xml,"
+        "https://feeds.bbci.co.uk/news/world/rss.xml,"
+        "https://feeds.bbci.co.uk/news/technology/rss.xml"
+    )
 
     @property
     def base_dir(self) -> Path:
@@ -40,6 +46,10 @@ class Settings(BaseSettings):
     @property
     def allowed_origins_list(self) -> list[str]:
         return [item.strip() for item in self.allowed_origins.split(",") if item.strip()]
+
+    @property
+    def news_feed_url_list(self) -> list[str]:
+        return [item.strip() for item in self.news_feed_urls.split(",") if item.strip()]
 
     def ensure_directories(self) -> None:
         for path_value in [self.data_dir, self.upload_dir, self.pipeline_cache_dir, self.qdrant_path]:
