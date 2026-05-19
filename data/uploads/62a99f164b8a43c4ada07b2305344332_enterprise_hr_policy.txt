@@ -1,0 +1,65 @@
+
+ENTERPRISE HR POLICY MANUAL
+Version: 3.2
+Department: Human Resources
+
+1. INTRODUCTION
+This policy document outlines employee leave policies, attendance guidelines,
+remote work eligibility, code of conduct, and employee benefits applicable to all
+full-time employees of the organization.
+
+2. LEAVE POLICY
+Employees are entitled to the following leaves annually:
+- 20 Paid Annual Leaves
+- 12 Sick Leaves
+- 5 Casual Leaves
+- 10 Public Holidays
+
+Unused paid leaves can be carried forward up to a maximum of 15 days.
+
+2.1 Sick Leave
+Employees must notify reporting managers within 2 hours of shift start.
+Medical certificates are mandatory for leaves exceeding 3 consecutive days.
+
+2.2 Maternity and Paternity Leave
+- Maternity Leave: 26 weeks
+- Paternity Leave: 15 working days
+
+3. REMOTE WORK POLICY
+Employees are eligible for hybrid work after completion of probation period.
+Remote work requests must be approved through the HRMS portal.
+
+4. ATTENDANCE POLICY
+Office working hours:
+9:00 AM to 6:00 PM IST
+
+Employees arriving later than 9:30 AM more than 3 times in a month may receive attendance warnings.
+
+5. CODE OF CONDUCT
+Employees must:
+- Maintain professionalism
+- Protect confidential company information
+- Avoid workplace harassment
+- Follow cybersecurity guidelines
+
+6. PERFORMANCE REVIEW
+Performance evaluations occur twice annually:
+- Mid-Year Review
+- Annual Review
+
+Ratings:
+- Outstanding
+- Exceeds Expectations
+- Meets Expectations
+- Needs Improvement
+
+7. EMPLOYEE BENEFITS
+Benefits include:
+- Health insurance
+- Life insurance
+- Learning reimbursement
+- Internet allowance for remote workers
+
+8. ESCALATION MATRIX
+HR Helpdesk: hr-support@company.com
+L2 Escalation: hr-manager@company.com

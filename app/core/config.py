@@ -24,8 +24,14 @@ class Settings(BaseSettings):
     qdrant_collection: str = "enterprise_knowledge"
 
     data_dir: Path = Path("data")
-    upload_dir: Path = Path("data/uploads")
     pipeline_cache_dir: Path = Path("data/pipeline_cache")
+
+    supabase_url: str = Field(default="", alias="SUPABASE_URL")
+    supabase_service_role_key: str = Field(default="", alias="SUPABASE_SERVICE_ROLE_KEY")
+    supabase_anon_key: str = Field(default="", alias="SUPABASE_ANON_KEY")
+    supabase_storage_bucket: str = Field(default="uploads", alias="SUPABASE_STORAGE_BUCKET")
+    supabase_documents_table: str = Field(default="documents", alias="SUPABASE_DOCUMENTS_TABLE")
+    supabase_connection_string: str = Field(default="", alias="SUPABASE_CONNECTION_STRING")
 
     chunk_size: int = 512
     chunk_overlap: int = 64
@@ -52,7 +58,7 @@ class Settings(BaseSettings):
         return [item.strip() for item in self.news_feed_urls.split(",") if item.strip()]
 
     def ensure_directories(self) -> None:
-        for path_value in [self.data_dir, self.upload_dir, self.pipeline_cache_dir, self.qdrant_path]:
+        for path_value in [self.data_dir, self.pipeline_cache_dir, self.qdrant_path]:
             resolved = self.base_dir / path_value
             resolved.mkdir(parents=True, exist_ok=True)
 

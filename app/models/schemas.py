@@ -1,8 +1,10 @@
+from datetime import datetime
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
 BotType = Literal["enterprise", "general"]
+IngestionStatus = Literal["queued", "uploading", "uploaded", "processing", "completed", "failed"]
 
 
 class ChatRequest(BaseModel):
@@ -42,10 +44,44 @@ class ChatResponse(BaseModel):
     tool_calls: list[ToolCall] = Field(default_factory=list)
 
 
+class DocumentRecord(BaseModel):
+    id: str
+    filename: str
+    storage_path: str
+    file_type: str
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    upload_timestamp: datetime | None = None
+    ingestion_status: IngestionStatus
+    vector_collection: str | None = None
+    vector_count: int = 0
+    chunk_count: int = 0
+    file_size: int | None = None
+    mime_type: str | None = None
+    error_message: str | None = None
+    tags: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class UploadFileResponse(BaseModel):
+    id: str
+    filename: str
+    storage_path: str
+    file_type: str
+    ingestion_status: IngestionStatus
+    vector_collection: str | None = None
+    created_at: datetime | None = None
+
+
 class UploadResponse(BaseModel):
     ingested_documents: int
     ingested_chunks: int
-    files: list[dict[str, str]]
+    files: list[UploadFileResponse]
+
+
+class DocumentListResponse(BaseModel):
+    items: list[DocumentRecord]
+    total: int
 
 
 class DocumentStatsResponse(BaseModel):
@@ -61,4 +97,3 @@ class HealthResponse(BaseModel):
     collection_name: str
     vector_count: int
     unique_files: int
-

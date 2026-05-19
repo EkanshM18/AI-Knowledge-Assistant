@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import { fetchHealth, fetchStats, sendMessage, uploadDocuments } from './api/client'
+import { fetchDocuments, fetchHealth, fetchStats, sendMessage, uploadDocuments } from './api/client'
 import { BotSelector } from './components/BotSelector'
 import { ChatPanel } from './components/ChatPanel'
 import { EvidencePanel } from './components/EvidencePanel'
@@ -63,37 +63,60 @@ function getInitialConversationState() {
 
 export default function App() {
   const [activeBot, setActiveBot] = useState('enterprise')
-  const [mode, setMode] = useState('select') // select | workspace
+  const [mode, setMode] = useState('select')
   const [health, setHealth] = useState(null)
   const [stats, setStats] = useState(null)
+  const [documents, setDocuments] = useState([])
   const [conversationState, setConversationState] = useState(getInitialConversationState)
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [sending, setSending] = useState(false)
-  const [status, setStatus] = useState('Connecting to local services...')
+  const [status, setStatus] = useState('Connecting to cloud services...')
   const [sessionIds, setSessionIds] = useState(() =>
     Object.fromEntries(bots.map((bot) => [bot.id, getSessionId(bot.id)]))
   )
 
   const currentConversation = conversationState[activeBot]
 
-  const title = useMemo(
-    () =>
-      'Dual-Bot Local Assistant',
-    []
-  )
+  const title = useMemo(() => 'Enterprise AI Knowledge Assistant', [])
 
   async function refreshStats() {
-    const [healthResponse, statsResponse] = await Promise.all([fetchHealth(), fetchStats()])
+    const [healthResponse, statsResponse, documentsResponse] = await Promise.all([
+      fetchHealth(),
+      fetchStats(),
+      fetchDocuments()
+    ])
     setHealth(healthResponse)
     setStats(statsResponse)
+    setDocuments(documentsResponse.items ?? [])
   }
 
   useEffect(() => {
-    refreshStats()
-      .then(() => setStatus('Local stack ready'))
-      .catch(() =>
-        setStatus('Local services not reachable. Start FastAPI on http://127.0.0.1:8000 and try again.')
-      )
+    let cancelled = false
+
+    async function loadDashboard() {
+      try {
+        await refreshStats()
+        if (!cancelled) {
+          setStatus('Cloud stack ready')
+        }
+      } catch {
+        if (!cancelled) {
+          setStatus('Cloud services not reachable. Start FastAPI on http://127.0.0.1:8000 and try again.')
+        }
+      }
+    }
+
+    loadDashboard()
+
+    const intervalId = window.setInterval(() => {
+      refreshStats().catch(() => undefined)
+    }, 15000)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(intervalId)
+    }
   }, [])
 
   function resetBot(botId) {
@@ -113,6 +136,7 @@ export default function App() {
       return next
     })
     setUploading(false)
+    setUploadProgress(0)
     setSending(false)
     setStatus('Workspace initialized')
   }
@@ -120,14 +144,17 @@ export default function App() {
   async function handleUpload(files, tags) {
     try {
       setUploading(true)
-      setStatus('Indexing uploaded documents into local Qdrant...')
-      await uploadDocuments(files, tags)
+      setUploadProgress(1)
+      setStatus('Streaming to enterprise-documents bucket...')
+      await uploadDocuments(files, tags, setUploadProgress)
+      setStatus('Cloud upload successful. Triggering RAG ingestion...')
       await refreshStats()
-      setStatus('Documents indexed successfully')
+      setStatus('Documents uploaded and ingestion status refreshed')
     } catch (error) {
       setStatus(error.message)
     } finally {
       setUploading(false)
+      setUploadProgress(0)
     }
   }
 
@@ -188,13 +215,12 @@ export default function App() {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <div className="rounded-full bg-ink px-4 py-2 text-xs font-bold uppercase tracking-[0.26em] text-white w-fit">
-                Local Assistant
+                Supabase Cloud Architecture
               </div>
               <h1 className="mt-5 text-4xl font-extrabold leading-tight md:text-5xl">{title}</h1>
               <p className="mt-4 max-w-3xl text-base leading-8 text-slate">
-                One workspace for grounded enterprise search and lightweight general tools. FastAPI, Qdrant,
-                Hugging Face models, and LangGraph orchestration with separate enterprise and general assistant
-                flows.
+                Enterprise document upload, cloud storage, PostgreSQL metadata, async ingestion, Qdrant vectors,
+                and grounded chat in one workspace.
               </p>
             </div>
             {mode === 'workspace' && (
@@ -230,7 +256,14 @@ export default function App() {
 
             <div className="grid gap-6 xl:grid-cols-[1.2fr,0.8fr]">
               <div className="space-y-6">
-                {activeBot === 'enterprise' && <UploadPanel onUpload={handleUpload} uploading={uploading} />}
+                {activeBot === 'enterprise' && (
+                  <UploadPanel
+                    onUpload={handleUpload}
+                    uploading={uploading}
+                    uploadProgress={uploadProgress}
+                    documents={documents}
+                  />
+                )}
                 <ChatPanel
                   bot={activeBot}
                   messages={currentConversation.messages}

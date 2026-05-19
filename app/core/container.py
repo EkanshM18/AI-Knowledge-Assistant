@@ -14,6 +14,8 @@ from app.services.generation_service import GenerationService
 from app.services.ingestion_service import IngestionService
 from app.services.memory_service import MemoryService
 from app.services.retrieval_service import RetrievalService
+from app.services.supabase_client import SupabaseClient
+from app.services.supabase_document_store import SupabaseDocumentStore
 from app.services.vector_service import QdrantService
 
 
@@ -24,6 +26,8 @@ class ApplicationContainer:
         self.memory_service = MemoryService()
         self.qdrant_service = QdrantService(self.settings)
         self.generation_service = GenerationService(self.settings)
+        self.supabase_client = SupabaseClient(self.settings)
+        self.document_store = SupabaseDocumentStore(self.settings, self.supabase_client)
         self._retrieval_service: RetrievalService | None = None
         self._ingestion_service: IngestionService | None = None
         self._enterprise_agent_graph: EnterpriseAssistantGraph | None = None
@@ -67,6 +71,8 @@ class ApplicationContainer:
                 loader=self.document_loader,
                 qdrant_service=self.qdrant_service,
                 retrieval_service=self.retrieval_service,
+                supabase_client=self.supabase_client,
+                document_store=self.document_store,
             )
         return self._ingestion_service
 
@@ -92,4 +98,3 @@ class ApplicationContainer:
 
     def close(self) -> None:
         self.qdrant_service.close()
-

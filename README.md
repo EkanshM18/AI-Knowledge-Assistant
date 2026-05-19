@@ -1,13 +1,14 @@
 # AI Knowledge Assistant
 
-A production-style, resume-ready AI Knowledge Assistant built with local open-source models, modular RAG architecture, and LangGraph-based multi-agent orchestration.
+A production-style, resume-ready AI Knowledge Assistant built with FastAPI, React, LlamaIndex, Qdrant, LangGraph, and a Supabase-backed cloud upload pipeline.
 
 ## What This Project Demonstrates
 
 - Enterprise document ingestion across PDF, TXT, DOCX, Markdown, CSV, JSON, and HTML
-- Local embeddings with `BAAI/bge-small-en-v1.5`
-- Local vector search with `QdrantClient(path="qdrant_data")`
-- Local answer generation with replaceable Hugging Face models
+- Supabase Storage for uploaded files
+- PostgreSQL metadata storage in Supabase
+- Async ingestion from Supabase objects into Qdrant
+- Free Hugging Face embeddings with `BAAI/bge-small-en-v1.5`
 - Grounded RAG answers with citations
 - Memory-aware conversations
 - Multi-agent orchestration with LangGraph
@@ -18,6 +19,8 @@ A production-style, resume-ready AI Knowledge Assistant built with local open-so
 ### Backend
 
 - `FastAPI` for APIs and application lifecycle
+- `Supabase Storage` for uploaded document objects
+- `Supabase Postgres` for document metadata and ingestion status
 - `LlamaIndex` ingestion pipeline for chunking and embeddings
 - `Qdrant` local mode for vector persistence
 - `Transformers` for local answer generation
@@ -27,7 +30,8 @@ A production-style, resume-ready AI Knowledge Assistant built with local open-so
 
 - `React` for UI
 - `TailwindCSS` for styling
-- Source-aware chat experience with upload and retrieval feedback
+- Drag-and-drop enterprise upload experience
+- Upload progress and live ingestion status tracking
 
 ## Project Structure
 
@@ -42,9 +46,10 @@ ai-knowledge-assistant/
 │   ├── services/
 │   ├── vectorstore/
 │   └── main.py
-├── data/
 ├── frontend/
 ├── qdrant_data/
+├── supabase/
+│   └── migrations/
 ├── .env.example
 ├── README.md
 └── requirements.txt
@@ -55,19 +60,20 @@ ai-knowledge-assistant/
 ### Phase 1: Foundation
 
 1. Create a modular FastAPI backend.
-2. Configure local-only model, storage, and runtime settings.
-3. Add upload and chat APIs.
+2. Configure cloud storage, vector, and runtime settings.
+3. Add upload, document listing, and chat APIs.
 4. Scaffold the React + Tailwind frontend.
 
-### Phase 2: RAG Pipeline
+### Phase 2: Cloud Ingestion Pipeline
 
-1. Load uploaded files and normalize text.
-2. Convert raw text into `LlamaIndex` `Document` objects.
-3. Chunk documents with `SentenceSplitter`.
-4. Generate embeddings with `HuggingFaceEmbedding`.
-5. Upsert chunk vectors plus metadata into local Qdrant.
-6. Embed user questions and retrieve top-k relevant chunks.
-7. Generate grounded answers from retrieved context only.
+1. Upload files directly to Supabase Storage.
+2. Persist document metadata in Supabase Postgres.
+3. Download uploaded files from Supabase for ingestion.
+4. Convert raw bytes into `LlamaIndex` `Document` objects.
+5. Chunk documents with `SentenceSplitter`.
+6. Generate embeddings with `HuggingFaceEmbedding`.
+7. Upsert chunk vectors plus metadata into Qdrant.
+8. Update ingestion status in PostgreSQL.
 
 ### Phase 3: Multi-Agent Workflow
 
@@ -79,10 +85,12 @@ ai-knowledge-assistant/
 
 ### Phase 4: Frontend Experience
 
-1. Add document upload flow.
-2. Add enterprise-style chat UI.
-3. Display source citations and retrieval evidence.
-4. Handle loading, errors, and empty states cleanly.
+1. Add drag-and-drop document upload flow.
+2. Add upload progress feedback.
+3. Show document ingestion status from PostgreSQL.
+4. Add enterprise-style chat UI.
+5. Display source citations and retrieval evidence.
+6. Handle loading, errors, and empty states cleanly.
 
 ### Phase 5: Production Hardening
 
@@ -112,14 +120,40 @@ npm install
 npm run dev
 ```
 
+## Supabase Setup
+
+1. Create a Supabase project.
+2. Create a storage bucket named `enterprise-documents`.
+3. Apply the SQL migration in `supabase/migrations/0001_documents.sql`.
+4. Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `SUPABASE_CONNECTION_STRING` in `.env`.
+5. Set `SUPABASE_STORAGE_BUCKET=enterprise-documents` and `SUPABASE_DOCUMENTS_TABLE=documents`.
+
 ## API Endpoints
 
 - `GET /api/health`
 - `POST /api/documents/upload`
+- `GET /api/documents`
 - `GET /api/documents/stats`
 - `POST /api/chat`
 
-## Default Local Models
+## Environment Variables
+
+Backend:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_CONNECTION_STRING`
+- `SUPABASE_STORAGE_BUCKET`
+- `SUPABASE_DOCUMENTS_TABLE`
+- `QDRANT_COLLECTION`
+- `PIPELINE_CACHE_DIR`
+
+Frontend:
+
+- `VITE_API_BASE_URL`
+
+## Default Models
 
 - Embeddings: `BAAI/bge-small-en-v1.5`
 - LLM: `google/flan-t5-base`
@@ -128,9 +162,10 @@ You can swap models in `.env` without changing the core pipeline.
 
 ## Notes
 
+- Uploaded files are stored in Supabase Storage, not on the local filesystem.
+- Document metadata and ingestion state are stored in Supabase Postgres.
+- The ingestion pipeline downloads the object from Supabase, processes it, and upserts embeddings to Qdrant.
 - The validator is intentionally conservative and prefers declining unsupported claims over hallucinating.
-- The current memory store is in-memory to keep local setup simple.
-- Qdrant local mode is ideal for local development and portfolio demos.
 
 ## Useful References
 
@@ -138,3 +173,4 @@ You can swap models in `.env` without changing the core pipeline.
 - LlamaIndex Hugging Face embeddings: https://docs.llamaindex.ai/en/stable/examples/embeddings/huggingface/
 - Qdrant local client docs: https://python-client.qdrant.tech/qdrant_client.local.qdrant_local
 - LangGraph graph API: https://docs.langchain.com/oss/python/langgraph/use-graph-api
+- Supabase docs: https://supabase.com/docs

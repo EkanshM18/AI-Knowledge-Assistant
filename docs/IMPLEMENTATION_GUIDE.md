@@ -7,13 +7,15 @@ This document turns the project into a practical execution plan you can follow, 
 1. Create and activate a virtual environment.
 2. Install `requirements.txt`.
 3. Copy `.env.example` to `.env`.
-4. Start the FastAPI server with `uvicorn app.main:app --reload`.
+4. Add `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_CONNECTION_STRING`.
+5. Start the FastAPI server with `uvicorn app.main:app --reload`.
 
 Expected outcome:
 
 - FastAPI starts locally on `http://127.0.0.1:8000`
 - Qdrant local storage is created under `qdrant_data/`
-- Upload and chat endpoints are available
+- Supabase client configuration loads successfully
+- Upload, document listing, stats, and chat endpoints are available
 
 ## Step 2: Prepare the Frontend Runtime
 
@@ -25,27 +27,37 @@ Expected outcome:
 Expected outcome:
 
 - React app starts on `http://127.0.0.1:5173`
-- Frontend can call backend health, upload, and chat APIs
+- Frontend can call backend health, upload, document list, stats, and chat APIs
 
 ## Step 3: Ingest Enterprise Documents
 
 Flow:
 
 1. Upload one or more files from the UI.
-2. Backend stores them in `data/uploads/`.
-3. `DocumentLoader` extracts normalized text.
-4. `IngestionService` converts documents into `LlamaIndex` `Document` objects.
-5. `SentenceSplitter` creates semantic chunks.
-6. `HuggingFaceEmbedding` generates local embeddings.
-7. `QdrantService` upserts chunk vectors and metadata into local Qdrant.
+2. Backend streams file bytes directly to `enterprise-documents` bucket in Supabase.
+3. Backend writes a metadata row into Supabase Postgres.
+4. `IngestionService` retrieves the file bytes from Supabase Storage.
+5. `DocumentLoader` (using `BytesIO`) extracts normalized text from in-memory bytes.
+6. `SentenceSplitter` creates semantic chunks.
+7. `HuggingFaceEmbedding` generates embeddings.
+8. `QdrantService` upserts chunk vectors and metadata into local Qdrant.
+9. Backend updates ingestion status in PostgreSQL.
 
-Metadata persisted per chunk:
+Metadata persisted per document:
 
+- `id`
 - `filename`
-- `page_number`
-- `source`
+- `storage_path`
+- `file_type`
+- `upload_timestamp`
+- `ingestion_status`
+- `vector_collection`
+- `vector_count`
+- `chunk_count`
+- `file_size`
+- `mime_type`
 - `tags`
-- `timestamp`
+- `metadata`
 
 ## Step 4: Run a Grounded Query
 
@@ -79,11 +91,11 @@ Routing behavior:
 
 Use these points in your resume or interview walkthrough:
 
-- Built a modular enterprise RAG platform with local-only open-source models
+- Built a modular enterprise RAG platform with Supabase-backed cloud storage and metadata persistence
 - Implemented LlamaIndex ingestion for chunking and embeddings
 - Used Qdrant local persistent storage without Docker
 - Orchestrated multi-agent workflows using LangGraph
-- Added a validator stage to reduce hallucinations
+- Added an ingestion status pipeline to reduce user uncertainty during uploads
 - Delivered FastAPI backend plus React/Tailwind frontend
 - Designed the system for model swap flexibility and future hybrid retrieval
 
@@ -118,10 +130,11 @@ Use these points in your resume or interview walkthrough:
 1. Launch backend and frontend.
 2. Show health and vector stats at zero.
 3. Upload sample enterprise documents.
-4. Ask a factual question from one uploaded document.
-5. Show the cited sources panel.
-6. Ask a follow-up question in the same session.
-7. Explain the router, retriever, synthesizer, and validator flow.
+4. Watch the upload progress and ingestion status updates.
+5. Ask a factual question from one uploaded document.
+6. Show the cited sources panel.
+7. Ask a follow-up question in the same session.
+8. Explain the router, retriever, synthesizer, and validator flow.
 
 ## Step 9: Model Swap Options
 

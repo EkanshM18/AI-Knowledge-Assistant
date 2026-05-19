@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Environment variables
 # Never commit this file!
 .env
@@ -23,18 +22,3 @@ env/
 
 # Operating System files
 .DS_Store
-=======
-__pycache__/
-*.pyc
-.pytest_cache/
-.venv/
-venv/
-.env
-node_modules/
-dist/
-build/
-*.log
-data/uploads/
-data/pipeline_cache/
-
->>>>>>> c65c535 (First Commit)
